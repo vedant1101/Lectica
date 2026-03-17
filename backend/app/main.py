@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 
 from app.db.database import init_db
 from app.config import settings
-import app.models.models  # noqa: F401 — must import to register tables
+import app.models.models  # noqa: F401
+
+from app.api.v1 import ingest, study, chat
 
 
 @asynccontextmanager
@@ -27,6 +29,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(ingest.router, prefix="/api/v1", tags=["ingest"])
+app.include_router(study.router,  prefix="/api/v1", tags=["study"])
+app.include_router(chat.router,   prefix="/api/v1", tags=["chat"])
 
 
 @app.get("/health")

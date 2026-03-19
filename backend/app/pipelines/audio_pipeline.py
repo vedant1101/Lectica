@@ -2,25 +2,20 @@ import asyncio
 import logging
 from typing import List
 
+from groq import AsyncGroq
+
+from app.config import settings
 from app.core.embedder import Embedder
 from app.db.database import AsyncSessionLocal
 from app.models.models import Chunk, ModalityEnum
 
 logger = logging.getLogger(__name__)
 
-_whisper_model = None
-
-
-def get_whisper_model(size: str = "base"):
-    global _whisper_model
-    if _whisper_model is None:
-        import whisper
-        logger.info(f"Loading Whisper model: {size}")
-        _whisper_model = whisper.load_model(size)
-    return _whisper_model
-
 
 class AudioPipeline:
+
+    def __init__(self):
+        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
     async def run(self, session_id: str, files: List[dict]) -> None:
         embedder = Embedder()
@@ -30,18 +25,21 @@ class AudioPipeline:
             filename = file["filename"]
 
             try:
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
-                    None,
-                    lambda: get_whisper_model().transcribe(
-                        path,
-                        verbose=False,
-                        word_timestamps=True,
+                # Transcribe using Groq Whisper API — no local install needed
+                with open(path, "rb") as f:
+                    transcription = await self.client.audio.transcriptions.create(
+                        file=(filename, f.read()),
+                        model="whisper-large-v3",
+                        response_format="verbose_json",
                     )
-                )
 
-                segments = result.get("segments", [])
+                # Chunk transcript into segments
+                segments = transcription.segments or []
                 chunks_text = self._merge_segments(segments)
+
+                if not chunks_text:
+                    # Fallback — use full text as one chunk
+                    chunks_text = [(transcription.text, 0.0)]
 
                 async with AsyncSessionLocal() as db:
                     for i, (text, start_time) in enumerate(chunks_text):
@@ -69,9 +67,11 @@ class AudioPipeline:
         current_start = 0.0
 
         for seg in segments:
-            words = seg["text"].strip().split()
+            text = seg.get("text", "") if isinstance(seg, dict) else seg.text
+            start = seg.get("start", 0.0) if isinstance(seg, dict) else seg.start
+            words = text.strip().split()
             if not current_words:
-                current_start = seg["start"]
+                current_start = start
             current_words.extend(words)
             if len(current_words) >= max_words:
                 chunks.append((" ".join(current_words), current_start))

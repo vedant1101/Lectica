@@ -1,7 +1,7 @@
 # Lectica 📚
 ### _Turn any lecture into a study companion._
 
-> A multimodal AI orchestration agent that routes video, audio, image, and PDF inputs through parallel async pipelines fusing transcripts, vision extractions, and semantic chunks into a unified vector store to generate flashcards, quizzes, summaries, and RAG-powered chat. Powered by Whisper, Groq, pgvector, and sentence-transformers.
+> A multimodal AI orchestration agent that routes video, audio, image, and PDF inputs through parallel async pipelines fusing transcripts, vision extractions, and semantic chunks into a unified vector store to generate flashcards, quizzes, summaries, and RAG-powered chat. Powered by Groq, pgvector, and sentence-transformers.
 
 <br/>
 
@@ -23,7 +23,7 @@
 | Service | URL |
 |---|---|
 | **Frontend** | `https://lectica.vercel.app` |
-| **Backend API** | `https://lectica-api.onrender.com` |
+| **Backend** | `https://lectica-production.up.railway.app` |
 
 <br/>
 
@@ -50,7 +50,7 @@
     ┌─────────────────────────────────────────┐
     │           Parallel pipelines            │
     │  ├── Video  → ffmpeg → frames + audio   │
-    │  ├── Audio  → Whisper → transcript      │
+    │  ├── Audio  → Groq Audio → transcript      │
     │  ├── Image  → Groq Vision → text        │
     │  └── Text   → semantic chunker          │
     └─────────────────────────────────────────┘
@@ -82,7 +82,7 @@
 | **Python 3.11** | Runtime |
 | **FastAPI** | Async REST API framework |
 | **SQLAlchemy (async)** | ORM with pgvector support |
-| **Whisper (local)** | Audio transcription |
+| **Groq Audio API** | Audio transcription |
 | **ffmpeg** | Video frame + audio extraction |
 | **Groq SDK** | LLM + vision inference |
 | **sentence-transformers** | Local embeddings (all-MiniLM-L6-v2) |
@@ -252,7 +252,7 @@ Stream a RAG-powered answer via Server-Sent Events.
 The orchestrator detects file type and routes to the correct pipeline — video, audio, image, or text.
 
 ### 2. Parallel Processing
-All pipelines run concurrently via `asyncio.gather`. A video triggers both the audio pipeline (Whisper) and vision pipeline (Groq Vision) simultaneously.
+All pipelines run concurrently via `asyncio.gather`. A video triggers both the audio pipeline (Groq Audio) and vision pipeline (Groq Vision) simultaneously.
 
 ### 3. Embedding + Storage
 Each chunk is embedded locally using sentence-transformers and stored in Supabase with pgvector for cosine similarity search.

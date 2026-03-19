@@ -9,7 +9,7 @@
 
       Processing video → extracting audio + keyframes...
 
-      ✓ Transcribed 47 minutes of audio via Whisper
+      ✓ Transcribed 47 minutes of audio via Groq Audio
       ✓ Extracted 12 keyframes via Groq Vision
       ✓ Generated 15 flashcards · 5 quiz questions · summary
 

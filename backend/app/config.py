@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = ""
     GROQ_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    HF_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
     EMBEDDING_DIM: int = 384

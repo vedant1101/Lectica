@@ -99,7 +99,7 @@
 ### Infrastructure
 | Service | Purpose |
 |---|---|
-| **Render** | Backend hosting |
+| **Railway** | Backend hosting |
 | **Vercel** | Frontend hosting |
 | **Supabase** | Postgres + pgvector |
 | **Groq** | LLM + vision inference API |

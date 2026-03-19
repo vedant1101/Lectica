@@ -102,7 +102,7 @@
 | **Railway** | Backend hosting |
 | **Vercel** | Frontend hosting |
 | **Supabase** | Postgres + pgvector |
-| **Groq** | LLM + vision inference API |
+| **Groq** | LLM + vision inference API + Audio API |
 
 <br/>
 

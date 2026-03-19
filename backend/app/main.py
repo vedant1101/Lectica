@@ -12,6 +12,9 @@ from app.api.v1 import ingest, study, chat
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    # Pre-load embedding model on startup so first request isn't slow
+    from app.core.embedder import get_model
+    get_model()
     yield
 
 

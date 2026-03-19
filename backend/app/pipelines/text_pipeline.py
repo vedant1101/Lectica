@@ -50,6 +50,10 @@ class TextPipeline:
                 raise
 
     def _read_file(self, path: str) -> str:
+        if path.endswith(".pdf"):
+            import fitz
+            doc = fitz.open(path)
+            return "\n\n".join(page.get_text() for page in doc)
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             return f.read()
 

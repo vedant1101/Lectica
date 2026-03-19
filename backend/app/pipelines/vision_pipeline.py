@@ -1,9 +1,10 @@
+import asyncio
 import base64
 import logging
 from pathlib import Path
 from typing import List
 
-import anthropic
+from groq import AsyncGroq
 
 from app.config import settings
 from app.core.embedder import Embedder
@@ -19,14 +20,13 @@ Extract ALL educational content visible in this image:
 2. Describe any diagrams, charts, or figures and what they show
 3. Any formulas, equations, or code snippets
 
-Format your response as clean, structured text that captures the full educational content.
-Do NOT add commentary — only extract what is present in the image."""
+Format your response as clean, structured text. Do NOT add commentary."""
 
 
 class VisionPipeline:
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
     async def run(self, session_id: str, files: List[dict]) -> None:
         embedder = Embedder()
@@ -39,28 +39,29 @@ class VisionPipeline:
                 with open(path, "rb") as f:
                     image_data = base64.standard_b64encode(f.read()).decode("utf-8")
 
-                media_type = self._get_media_type(filename)
+                mime_type = self._get_mime_type(filename)
 
-                response = await self.client.messages.create(
-                    model=settings.CLAUDE_VISION_MODEL,
-                    max_tokens=1500,
+                response = await self.client.chat.completions.create(
+                    model="meta-llama/llama-4-scout-17b-16e-instruct",
                     messages=[{
                         "role": "user",
                         "content": [
                             {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
-                                },
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{mime_type};base64,{image_data}"
+                                }
                             },
-                            {"type": "text", "text": VISION_PROMPT},
-                        ],
+                            {
+                                "type": "text",
+                                "text": VISION_PROMPT
+                            }
+                        ]
                     }],
+                    max_tokens=1500,
                 )
 
-                extracted_text = response.content[0].text
+                extracted_text = response.choices[0].message.content
                 embedding = await embedder.embed(extracted_text)
 
                 async with AsyncSessionLocal() as db:
@@ -81,7 +82,7 @@ class VisionPipeline:
                 logger.error(f"Vision pipeline failed for {filename}: {e}")
                 raise
 
-    def _get_media_type(self, filename: str) -> str:
+    def _get_mime_type(self, filename: str) -> str:
         ext = Path(filename).suffix.lower()
         return {
             ".jpg": "image/jpeg",

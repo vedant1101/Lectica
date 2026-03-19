@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List
 
-import anthropic
+from groq import AsyncGroq
 from sqlalchemy import select
 
 from app.config import settings
@@ -61,7 +61,7 @@ Content:
 
 class StudyService:
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
     async def generate_all(self, session_id: str) -> None:
         chunks = await self._get_chunks(session_id)
@@ -74,15 +74,15 @@ class StudyService:
     async def generate_quiz(self, session_id: str, n: int = 5) -> List[dict]:
         chunks = await self._get_chunks(session_id)
         combined = self._combine_chunks(chunks)
-        return await self._call_claude_json(QUIZ_PROMPT.format(n=n, content=combined))
+        return await self._call_groq_json(QUIZ_PROMPT.format(n=n, content=combined))
 
     async def generate_summary(self, session_id: str) -> dict:
         chunks = await self._get_chunks(session_id)
         combined = self._combine_chunks(chunks)
-        return await self._call_claude_json(SUMMARY_PROMPT.format(content=combined))
+        return await self._call_groq_json(SUMMARY_PROMPT.format(content=combined))
 
     async def _generate_flashcards(self, session_id: str, content: str, n: int):
-        cards = await self._call_claude_json(
+        cards = await self._call_groq_json(
             FLASHCARD_PROMPT.format(n=n, content=content)
         )
         async with AsyncSessionLocal() as db:
@@ -94,13 +94,13 @@ class StudyService:
                 ))
             await db.commit()
 
-    async def _call_claude_json(self, prompt: str):
-        response = await self.client.messages.create(
-            model=settings.CLAUDE_FAST_MODEL,
-            max_tokens=2000,
+    async def _call_groq_json(self, prompt: str):
+        response = await self.client.chat.completions.create(
+            model=settings.GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
         )
-        raw = response.content[0].text.strip()
+        raw = response.choices[0].message.content.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
